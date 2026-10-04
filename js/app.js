@@ -76,6 +76,7 @@ function recordResult() {
 }
 
 function restart() {
+  if (RK) RK.nickReset();
   state.answers = Array(20).fill(null);
   state.step = "form";
   state.warned = false;
@@ -249,6 +250,8 @@ function renderReport() {
 }
 
 function render() {
+  // 昵称门槛：打分页（含刷新恢复、重新测试）没确认过昵称就先补录；点「返回」回封面
+  if (RK) RK.guard(state.step === "form", () => { state.step = "cover"; save(); render(); });
   const view = { cover: renderCover, form: renderForm, report: renderReport }[state.step];
   app.innerHTML = view();
   if (state.step === "report") moveNeedle();
@@ -326,11 +329,15 @@ function onClick(event) {
   const action = event.target.closest("[data-action]");
   if (!action) return;
   if (action.dataset.action === "start") {
-    state.step = "form";
-    state.warned = false;
-    save();
-    render();
-    scrollTop();
+    const begin = () => {
+      state.step = "form";
+      state.warned = false;
+      save();
+      render();
+      scrollTop();
+    };
+    if (RK) RK.ensureNick(begin);
+    else begin();
   }
   if (action.dataset.action === "submit") {
     if (!complete()) {
@@ -362,7 +369,7 @@ function onKey(event) {
   next.focus();
 }
 
-if (RK) RK.configure({ id: "juying", title: "巨婴测评", onRestart: restart });
+if (RK) RK.configure({ id: "juying", title: "巨婴测评", onRestart: restart, capture: () => RK.capture(app.querySelector(".sheet") || app, { skip: ".actions" }) });
 load();
 app.addEventListener("click", onClick);
 app.addEventListener("keydown", onKey);

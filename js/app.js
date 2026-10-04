@@ -241,8 +241,7 @@ function renderReport() {
     ${ledger}
     ${RK ? RK.bar(summarize(), { restart: false }) : ""}
     <div class="actions">
-      <button class="primary" type="button" data-action="edit">返回修改分数</button>
-      <button class="ghost" type="button" data-action="reset">重新打分</button>
+      <button class="ghost" type="button" data-action="reset">重新测试</button>
       <a class="ghost" href="https://xiangshu3721.github.io/mindtest-web/">回到目录</a>
     </div>
     <p class="fine">作答留在这台设备上。分数只和这 20 项有关，不和其他测评相加。</p>
@@ -341,12 +340,6 @@ function onClick(event) {
     state.step = "report";
     state.warned = false;
     recordResult();
-    save();
-    render();
-    scrollTop();
-  }
-  if (action.dataset.action === "edit") {
-    state.step = "form";
     save();
     render();
     scrollTop();

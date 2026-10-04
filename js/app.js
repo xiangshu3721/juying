@@ -3,6 +3,7 @@ import { scoreJuying } from "./score.js";
 
 const app = document.querySelector("#app");
 const STORAGE = "juying-session";
+const RK = window.ResultKit;
 
 const state = {
   step: "cover",
@@ -55,6 +56,34 @@ function reduceMotion() {
   return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 }
 
+function summarize() {
+  const result = scoreJuying(state.answers);
+  const tone = result.band.id === "mature" ? "ok" : result.band.id === "partial" ? "mid" : "high";
+  return {
+    headline: `${result.total} 分 · ${result.band.name}`,
+    sub: `20 项平均 ${result.average} 分。${result.side} ${DISCLAIMER}`,
+    metrics: [
+      { label: "总分", value: `${result.total} / 100`, frac: result.total / 100, tone },
+      { label: "心理特征", value: `${result.mind} / 50`, frac: result.mind / 50, tone },
+      { label: "行为特征", value: `${result.act} / 50`, frac: result.act / 50, tone },
+    ],
+    notes: result.marked.slice(0, 5).map((row) => `${row.group} ${row.n}：${row.text}（${row.score} · ${row.label}）`),
+  };
+}
+
+function recordResult() {
+  if (RK && complete()) RK.save(summarize(), { key: state.answers.join(",") });
+}
+
+function restart() {
+  state.answers = Array(20).fill(null);
+  state.step = "form";
+  state.warned = false;
+  save();
+  render();
+  scrollTop();
+}
+
 function tallyText() {
   const done = state.answers.filter((value) => value != null).length;
   const sum = state.answers.reduce((total, value) => total + (value ?? 0), 0);
@@ -75,6 +104,7 @@ function renderCover() {
     <p class="meta">20 项 · 每项 0 到 5 分 · 满分 100</p>
     <div class="actions">
       <button class="primary" type="button" data-action="start">开始打分</button>
+      ${RK ? RK.historyButton({ className: "ghost" }) : ""}
       <a class="ghost" href="https://xiangshu3721.github.io/mindtest-web/">回到目录</a>
     </div>
     <p class="fine">${esc(DISCLAIMER)} 作答留在这台设备上，不会上传。结果用来对照讲座，不是诊断。</p>
@@ -209,6 +239,7 @@ function renderReport() {
     <h2>逐项分数</h2>
     <p class="about">0 到 5 都列在这里。4 分和 5 分用深色标出。</p>
     ${ledger}
+    ${RK ? RK.bar(summarize(), { restart: false }) : ""}
     <div class="actions">
       <button class="primary" type="button" data-action="edit">返回修改分数</button>
       <button class="ghost" type="button" data-action="reset">重新打分</button>
@@ -309,6 +340,7 @@ function onClick(event) {
     }
     state.step = "report";
     state.warned = false;
+    recordResult();
     save();
     render();
     scrollTop();
@@ -319,14 +351,7 @@ function onClick(event) {
     render();
     scrollTop();
   }
-  if (action.dataset.action === "reset") {
-    state.answers = Array(20).fill(null);
-    state.step = "form";
-    state.warned = false;
-    save();
-    render();
-    scrollTop();
-  }
+  if (action.dataset.action === "reset") restart();
 }
 
 function onKey(event) {
@@ -344,6 +369,7 @@ function onKey(event) {
   next.focus();
 }
 
+if (RK) RK.configure({ id: "juying", title: "巨婴测评", onRestart: restart });
 load();
 app.addEventListener("click", onClick);
 app.addEventListener("keydown", onKey);

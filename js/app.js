@@ -369,7 +369,7 @@ function onKey(event) {
   next.focus();
 }
 
-if (RK) RK.configure({ id: "juying", title: "巨婴测评", onRestart: restart, capture: () => RK.capture(app.querySelector(".sheet") || app, { skip: ".actions" }) });
+if (RK) RK.configure({ id: "juying", title: "巨婴测评", start: ["[data-action=start]"], onRestart: restart, capture: () => RK.capture(app.querySelector(".sheet") || app, { skip: ".actions" }) });
 load();
 app.addEventListener("click", onClick);
 app.addEventListener("keydown", onKey);

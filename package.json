@@ -1,0 +1,8 @@
+{
+  "name": "juying",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test js/cloud-payload.test.mjs js/cloud-client.test.mjs js/cloud-kit.test.mjs"
+  }
+}

@@ -1,3 +1,4 @@
+import { mountJuyingCloud } from "./cloud-kit.js";
 import { BANDS, DEGREES, DISCLAIMER, GROUPS, REFERENCE_INTRO } from "./data.js";
 import { scoreJuying } from "./score.js";
 
@@ -108,7 +109,7 @@ function renderCover() {
       ${RK ? RK.historyButton({ className: "ghost" }) : ""}
       <a class="ghost" href="https://xiangshu3721.github.io/mindtest-web/">回到目录</a>
     </div>
-    <p class="fine">${esc(DISCLAIMER)} 作答留在这台设备上，不会上传。结果用来对照讲座，不是诊断。</p>
+    <p class="fine">${esc(DISCLAIMER)} 进入结果页后会准备一条阅读链接，点「分享结果」才会复制。结果用来对照讲座，不是诊断。</p>
   `);
 }
 
@@ -241,12 +242,35 @@ function renderReport() {
     <p class="about">0 到 5 都列在这里。4 分和 5 分用深色标出。</p>
     ${ledger}
     ${RK ? RK.bar(summarize(), { restart: false }) : ""}
+    <div data-cloud-slot data-rk-skip></div>
     <div class="actions">
       <button class="ghost" type="button" data-action="reset">重新测试</button>
       <a class="ghost" href="https://xiangshu3721.github.io/mindtest-web/">回到目录</a>
     </div>
-    <p class="fine">作答留在这台设备上。分数只和这 20 项有关，不和其他测评相加。</p>
+    <p class="fine">${esc(DISCLAIMER)} 不是诊断。分数只和这 20 项有关，不和其他测评相加。</p>
   `);
+}
+
+function currentNickname() {
+  try {
+    if (RK && RK.nick && typeof RK.nick.get === "function") return RK.nick.get();
+  } catch {
+    /* 没有结果工具时，分享会停在称呼门槛。 */
+  }
+  try {
+    return localStorage.getItem("rk.v1.nickname") || "";
+  } catch {
+    return "";
+  }
+}
+
+function mountReportCloud() {
+  const slot = app.querySelector("[data-cloud-slot]");
+  if (!slot || !complete()) return;
+  mountJuyingCloud(slot, {
+    nickname: currentNickname(),
+    answers: state.answers.slice(),
+  });
 }
 
 function render() {
@@ -254,7 +278,10 @@ function render() {
   if (RK) RK.guard(state.step === "form", () => { state.step = "cover"; save(); render(); });
   const view = { cover: renderCover, form: renderForm, report: renderReport }[state.step];
   app.innerHTML = view();
-  if (state.step === "report") moveNeedle();
+  if (state.step === "report") {
+    moveNeedle();
+    mountReportCloud();
+  }
   const focus = app.querySelector("h1");
   if (focus && state.step !== "form") focus.setAttribute("tabindex", "-1");
 }
